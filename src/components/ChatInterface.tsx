@@ -4,6 +4,8 @@ import { Send, Trash2, Code, MessageSquare } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
 import TypingIndicator from '@/components/TypingIndicator';
 import CodePreview from '@/components/CodePreview';
+import { streamChat, type ChatMessage as ChatMsg } from '@/lib/streamChat';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -14,24 +16,6 @@ interface Message {
 interface ChatInterfaceProps {
   userName: string;
 }
-
-// Simulated AI responses
-const getAIResponse = (input: string): string => {
-  const lower = input.toLowerCase();
-  if (lower.includes('html') || lower.includes('صفحة') || lower.includes('موقع')) {
-    return `بالتأكيد! إليك صفحة HTML بسيطة وجميلة:\n\n\`\`\`html\n<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n  <meta charset="UTF-8">\n  <style>\n    body {\n      font-family: 'Cairo', sans-serif;\n      background: linear-gradient(135deg, #0f0f1a, #1a1030);\n      color: #e2e8f0;\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      min-height: 100vh;\n      margin: 0;\n    }\n    .card {\n      background: rgba(255,255,255,0.05);\n      backdrop-filter: blur(20px);\n      border: 1px solid rgba(139,92,246,0.3);\n      border-radius: 20px;\n      padding: 40px;\n      text-align: center;\n      box-shadow: 0 0 40px rgba(139,92,246,0.1);\n    }\n    h1 { color: #a78bfa; margin-bottom: 16px; }\n    p { color: #94a3b8; line-height: 1.8; }\n  </style>\n</head>\n<body>\n  <div class="card">\n    <h1>مرحباً بالعالم! 🌍</h1>\n    <p>هذه صفحة مصممة بواسطة Nexa AI</p>\n  </div>\n</body>\n</html>\n\`\`\`\n\nيمكنك مشاهدة المعاينة المباشرة في اللوحة الجانبية! ✨`;
-  }
-  if (lower.includes('javascript') || lower.includes('js') || lower.includes('كود')) {
-    return `إليك مثال JavaScript ممتع:\n\n\`\`\`javascript\nconst greet = (name) => {\n  console.log(\`مرحباً يا \${name}! 👋\`);\n  console.log('Nexa AI يرحب بك');\n};\n\ngreet('Developer');\n\n// Fibonacci\nconst fib = (n) => n <= 1 ? n : fib(n-1) + fib(n-2);\nconsole.log('Fibonacci(10):', fib(10));\n\`\`\`\n\nكود نظيف وسريع! 🚀`;
-  }
-  if (lower.includes('css') || lower.includes('تصميم') || lower.includes('ستايل')) {
-    return `إليك بعض CSS الرائع:\n\n\`\`\`css\n.nexa-button {\n  background: linear-gradient(135deg, #8b5cf6, #06b6d4);\n  color: white;\n  padding: 12px 32px;\n  border: none;\n  border-radius: 16px;\n  font-size: 16px;\n  cursor: pointer;\n  transition: all 0.3s ease;\n  box-shadow: 0 0 20px rgba(139,92,246,0.3);\n}\n\n.nexa-button:hover {\n  transform: translateY(-3px);\n  box-shadow: 0 0 40px rgba(139,92,246,0.5);\n}\n\`\`\`\n\nتصميم مستقبلي أنيق! 💎`;
-  }
-  if (lower.includes('مرحب') || lower.includes('هلا') || lower.includes('سلام') || lower.includes('hi') || lower.includes('hello')) {
-    return `أهلاً وسهلاً! 😊\n\nأنا نيكسا، مساعدك الذكي. يمكنني مساعدتك في:\n\n• كتابة وتنفيذ الأكواد (HTML, CSS, JS)\n• شرح المفاهيم البرمجية\n• تصميم واجهات المستخدم\n• حل المشاكل التقنية\n\nماذا تريد أن نبني اليوم؟ 🚀`;
-  }
-  return `شكراً على سؤالك! 💡\n\nأنا نيكسا، وأنا هنا لمساعدتك. جرّب أن تطلب مني:\n\n• "اكتب صفحة HTML"\n• "اكتب كود JavaScript"\n• "اكتب CSS جميل"\n\nأو أي سؤال برمجي آخر! 🔥`;
-};
 
 const ChatInterface = ({ userName }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -68,20 +52,39 @@ const ChatInterface = ({ userName }: ChatInterfaceProps) => {
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input.trim() };
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput('');
     setIsTyping(true);
 
-    // Simulate AI thinking
-    await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
+    // Build history for API (exclude IDs)
+    const apiMessages: ChatMsg[] = updatedMessages.map(m => ({ role: m.role, content: m.content }));
 
-    const aiResponse = getAIResponse(input);
-    const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: aiResponse };
-    setMessages(prev => [...prev, aiMsg]);
-    setIsTyping(false);
+    let assistantContent = "";
+    const assistantId = (Date.now() + 1).toString();
 
-    // Auto switch to preview on mobile if code
-    if (aiResponse.includes('```')) setMobileTab('preview');
+    await streamChat({
+      messages: apiMessages,
+      onDelta: (chunk) => {
+        assistantContent += chunk;
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last.id === assistantId) {
+            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+          }
+          return [...prev, { id: assistantId, role: 'assistant', content: assistantContent }];
+        });
+      },
+      onDone: () => {
+        setIsTyping(false);
+        // Auto switch to preview on mobile if code
+        if (assistantContent.includes('```')) setMobileTab('preview');
+      },
+      onError: (error) => {
+        setIsTyping(false);
+        toast.error(error);
+      },
+    });
   };
 
   const handleClear = () => {
@@ -114,7 +117,6 @@ const ChatInterface = ({ userName }: ChatInterfaceProps) => {
           <span className="text-xs text-muted-foreground font-cairo">AI Assistant</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Mobile tab toggle */}
           {showSplit && (
             <div className="flex md:hidden glass-card rounded-xl p-1 gap-1">
               <button
@@ -146,7 +148,7 @@ const ChatInterface = ({ userName }: ChatInterfaceProps) => {
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Code Preview — Desktop left panel */}
+        {/* Code Preview */}
         <AnimatePresence>
           {showSplit && latestCode && (
             <motion.div
@@ -167,13 +169,12 @@ const ChatInterface = ({ userName }: ChatInterfaceProps) => {
         <div
           className={`${showSplit && mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col flex-1 ${showSplit ? 'md:w-1/2' : 'w-full'}`}
         >
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
             <div className={`mx-auto ${showSplit ? 'max-w-full' : 'max-w-2xl'}`}>
               {messages.map(msg => (
                 <ChatMessage key={msg.id} role={msg.role} content={msg.content} userName={userName} />
               ))}
-              {isTyping && (
+              {isTyping && messages[messages.length - 1]?.role !== 'assistant' && (
                 <div className="flex justify-start mb-4">
                   <div className="glass-card px-4 py-2">
                     <div className="text-xs mb-1 text-muted-foreground font-inter">Nexa AI</div>
