@@ -1,12 +1,37 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import LandingIntro from '@/components/LandingIntro';
+import LoginScreen from '@/components/LoginScreen';
+import ChatInterface from '@/components/ChatInterface';
+
+type AppState = 'intro' | 'login' | 'chat';
 
 const Index = () => {
+  const [state, setState] = useState<AppState>(() => {
+    const saved = localStorage.getItem('nexa-user');
+    return saved ? 'chat' : 'intro';
+  });
+  const [userName, setUserName] = useState(() => localStorage.getItem('nexa-user') || '');
+
+  useEffect(() => {
+    // Prevent white flash
+    document.body.style.background = 'hsl(240, 15%, 5%)';
+  }, []);
+
+  const handleIntroComplete = () => setState('login');
+
+  const handleLogin = (name: string) => {
+    setUserName(name);
+    setState('chat');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <AnimatePresence mode="wait">
+        {state === 'intro' && <LandingIntro key="intro" onComplete={handleIntroComplete} />}
+        {state === 'login' && <LoginScreen key="login" onLogin={handleLogin} />}
+        {state === 'chat' && <ChatInterface key="chat" userName={userName} />}
+      </AnimatePresence>
     </div>
   );
 };
