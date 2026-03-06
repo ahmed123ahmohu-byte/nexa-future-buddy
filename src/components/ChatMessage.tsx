@@ -7,6 +7,7 @@ interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   userName?: string;
+  isStreaming?: boolean;
 }
 
 const CopyButton = ({ text }: { text: string }) => {
@@ -23,7 +24,7 @@ const CopyButton = ({ text }: { text: string }) => {
   );
 };
 
-const ChatMessage = ({ role, content, userName }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, userName, isStreaming }: ChatMessageProps) => {
   const isUser = role === 'user';
 
   return (
@@ -43,7 +44,7 @@ const ChatMessage = ({ role, content, userName }: ChatMessageProps) => {
         <div className="text-xs mb-1 opacity-60 font-inter">
           {isUser ? (userName || 'You') : 'Nexa AI'}
         </div>
-        <div className="text-sm md:text-base font-cairo prose-nexa" dir="auto">
+        <div className="text-sm md:text-base font-cairo" dir="auto">
           <ReactMarkdown
             components={{
               code({ className, children, ...props }) {
@@ -86,6 +87,10 @@ const ChatMessage = ({ role, content, userName }: ChatMessageProps) => {
           >
             {content}
           </ReactMarkdown>
+          {/* Blinking cursor for streaming */}
+          {isStreaming && (
+            <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-0.5 align-middle rounded-sm" />
+          )}
         </div>
       </div>
     </motion.div>
