@@ -14,7 +14,6 @@ const Index = () => {
   const [userName, setUserName] = useState(() => localStorage.getItem('nexa-user') || '');
 
   useEffect(() => {
-    // Prevent white flash
     document.body.style.background = 'hsl(240, 15%, 5%)';
   }, []);
 
@@ -25,12 +24,20 @@ const Index = () => {
     setState('chat');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('nexa-user');
+    localStorage.removeItem('nexa-sessions');
+    localStorage.removeItem('nexa-chat');
+    setUserName('');
+    setState('intro');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AnimatePresence mode="wait">
         {state === 'intro' && <LandingIntro key="intro" onComplete={handleIntroComplete} />}
         {state === 'login' && <LoginScreen key="login" onLogin={handleLogin} />}
-        {state === 'chat' && <ChatInterface key="chat" userName={userName} />}
+        {state === 'chat' && <ChatInterface key="chat" userName={userName} onLogout={handleLogout} />}
       </AnimatePresence>
     </div>
   );
