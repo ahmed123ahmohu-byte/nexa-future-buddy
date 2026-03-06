@@ -34,7 +34,6 @@ const LandingIntro = ({ onComplete }: LandingIntroProps) => {
           <ParticleField />
 
           <div className="relative z-10 flex flex-col items-center gap-8 px-6 text-center">
-            {/* Glowing orb */}
             <motion.div
               className="absolute -top-32 w-64 h-64 rounded-full opacity-30"
               style={{
@@ -44,7 +43,6 @@ const LandingIntro = ({ onComplete }: LandingIntroProps) => {
               transition={{ duration: 4, repeat: Infinity }}
             />
 
-            {/* Logo */}
             <motion.h1
               className="text-6xl md:text-8xl font-black tracking-tight gradient-text font-inter"
               initial={{ opacity: 0, y: 30 }}
@@ -54,7 +52,6 @@ const LandingIntro = ({ onComplete }: LandingIntroProps) => {
               NEXA
             </motion.h1>
 
-            {/* Arabic text */}
             <motion.p
               className="text-xl md:text-2xl font-cairo neon-text text-foreground/90 max-w-lg leading-relaxed"
               dir="rtl"
@@ -72,10 +69,9 @@ const LandingIntro = ({ onComplete }: LandingIntroProps) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 1.8 }}
             >
-              مصنوع بأيادٍ طلاب عرب. 🌍
+              صنع بواسطة أحمد الرئيس 👑
             </motion.p>
 
-            {/* CTA Button */}
             <AnimatePresence>
               {showButton && (
                 <motion.button
