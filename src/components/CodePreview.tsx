@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Copy, Check, X } from 'lucide-react';
 
 interface CodePreviewProps {
   code: string;
   language: string;
+  onClose?: () => void;
 }
 
-const CodePreview = ({ code, language }: CodePreviewProps) => {
+const CodePreview = ({ code, language, onClose }: CodePreviewProps) => {
   const [srcDoc, setSrcDoc] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     if (['html', 'css', 'javascript', 'js', 'jsx', 'react'].includes(language.toLowerCase())) {
-      // Build a simple HTML preview
       const isFullHtml = code.trim().toLowerCase().startsWith('<!doctype') || code.trim().toLowerCase().startsWith('<html');
       
       if (isFullHtml) {
@@ -34,24 +42,36 @@ try { ${code} } catch(e) { document.getElementById('output').textContent = 'Erro
 
   return (
     <motion.div
-      className="glass-card overflow-hidden h-full"
+      className="glass-card overflow-hidden h-full flex flex-col"
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-glass-border/30">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-destructive/70" />
-          <div className="w-3 h-3 rounded-full bg-neon-purple/50" />
-          <div className="w-3 h-3 rounded-full bg-accent/50" />
+      <div className="flex items-center justify-between px-4 py-2 border-b border-glass-border/30">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-destructive/70" />
+            <div className="w-3 h-3 rounded-full bg-neon-purple/50" />
+            <div className="w-3 h-3 rounded-full bg-accent/50" />
+          </div>
+          <span className="text-xs text-muted-foreground font-inter ml-2">
+            Live Preview — {language}
+          </span>
         </div>
-        <span className="text-xs text-muted-foreground font-inter ml-2">
-          Live Preview — {language}
-        </span>
+        <div className="flex items-center gap-1">
+          <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors" title="نسخ الكود">
+            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+          {onClose && (
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors md:hidden" title="إغلاق">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
       <iframe
         srcDoc={srcDoc}
-        className="w-full h-[calc(100%-36px)] border-0"
+        className="w-full flex-1 border-0"
         sandbox="allow-scripts"
         title="Code Preview"
       />
